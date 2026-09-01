@@ -1,0 +1,39 @@
+name: Fetch CTL data
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install the client
+        env:
+          TOKEN: ${{ secrets.CTL_DATA_CLIENT_TOKEN }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            "git+https://x-access-token:${TOKEN}@github.com/CrisisTextLine/ctl-data-client.git"
+
+      - name: Write the access file
+        env:
+          CONFIG: ${{ secrets.CTL_DATA_CONFIG }}
+        run: printf '%s' "$CONFIG" > pophive.config.json
+
+      - name: Download the dataset
+        run: python download.py
+
+      - name: Save the data
+        uses: actions/upload-artifact@v4
+        with:
+          name: crisistrends-data
+          path: data/
+
